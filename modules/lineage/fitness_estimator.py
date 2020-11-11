@@ -153,7 +153,7 @@ class FitnessEstimator:
 
             fitness, fitness_CI_lower, fitness_CI_upper= self.estimate_relative_fitness(observed, begin, end, barcoding)
 
-            lineage.relative_fitness[in_epoch] = fitness[len(fitness)/2]
+            lineage.relative_fitness[in_epoch] = fitness[len(fitness)//2]
             lineage.relative_fitness_CI[in_epoch] = fitness_CI_lower, fitness_CI_upper
             updated = True
         else:
