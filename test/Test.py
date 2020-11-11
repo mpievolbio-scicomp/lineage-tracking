@@ -1,11 +1,11 @@
 import unittest
 import sys
 
-from barcode_scripts.fit_error_model_test import ErrorModelTest
+from barcode_scripts_test import BarcodeScriptsTest
 
 def suite():
     suites = [
-               unittest.makeSuite(ErrorModelTest),
+               unittest.makeSuite(BarcodeScriptsTest),
              ]
 
     return unittest.TestSuite(suites)
