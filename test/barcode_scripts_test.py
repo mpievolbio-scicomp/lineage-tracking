@@ -4,6 +4,8 @@ import os
 import pandas
 import numpy
 import pytest
+import shlex
+from subprocess import Popen
 
 # add custom modules to path
 modules_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'modules'))
@@ -11,6 +13,9 @@ sys.path.insert(0, modules_path)
 
 test_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'barcode_scripts'))
 sys.path.insert(0, test_path)
+
+data_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data'))
+reference_data_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'reference_data'))
 
 import config
 
@@ -88,11 +93,11 @@ class BarcodeScriptsTest(unittest.TestCase):
         # This runs the script.
         # import estimate_relative_fitnesses
 
-        # C1 barcode fitness
-        # Read generated data.
+        # Set paths to data.
         lineage_fitness_path = config.lineage_fitness_estimate_directory
         reference_lineage_fitness_path = lineage_fitness_path.replace('reference_data', 'data')
 
+        # C1 barcode fitness
         C1_BC1_barcoding_fitnesses = pandas.read_csv(os.path.join(lineage_fitness_path, 'C1-BC1_barcoding_fitnesses.csv'), skiprows=1, sep='\t', header=None)
         C1_BC2_barcoding_fitnesses = pandas.read_csv(os.path.join(lineage_fitness_path, 'C1-BC2_barcoding_fitnesses.csv'), skiprows=1, sep='\t', header=None)
         C1_BC3_barcoding_fitnesses = pandas.read_csv(os.path.join(lineage_fitness_path, 'C1-BC3_barcoding_fitnesses.csv'), skiprows=1, sep='\t', header=None)
@@ -177,10 +182,6 @@ class BarcodeScriptsTest(unittest.TestCase):
         self.assertAlmostEqual(numpy.linalg.norm(C1_BC8_barcoding_fitnesses.to_numpy() - reference_C1_BC8_barcoding_fitnesses.to_numpy()), 0.0)
 
         # C1 evolution fitness
-        # Read generated data.
-        lineage_fitness_path = config.lineage_fitness_estimate_directory
-        reference_lineage_fitness_path = lineage_fitness_path.replace('reference_data', 'data')
-
         C1_BC1_evolution_fitnesses = pandas.read_csv(os.path.join(lineage_fitness_path, 'C1-BC1_evolution_fitnesses.csv'), skiprows=1, sep='\t', header=None)
         C1_BC2_evolution_fitnesses = pandas.read_csv(os.path.join(lineage_fitness_path, 'C1-BC2_evolution_fitnesses.csv'), skiprows=1, sep='\t', header=None)
         C1_BC3_evolution_fitnesses = pandas.read_csv(os.path.join(lineage_fitness_path, 'C1-BC3_evolution_fitnesses.csv'), skiprows=1, sep='\t', header=None)
@@ -265,10 +266,6 @@ class BarcodeScriptsTest(unittest.TestCase):
         self.assertAlmostEqual(numpy.linalg.norm(C1_BC8_evolution_fitnesses.to_numpy() - reference_C1_BC8_evolution_fitnesses.to_numpy()), 0.0)
 
         # D1 barcode fitness
-        # Read generated data.
-        lineage_fitness_path = config.lineage_fitness_estimate_directory
-        reference_lineage_fitness_path = lineage_fitness_path.replace('reference_data', 'data')
-
         D1_BC1_barcoding_fitnesses = pandas.read_csv(os.path.join(lineage_fitness_path, 'D1-BC1_barcoding_fitnesses.csv'), skiprows=1, sep='\t', header=None)
         D1_BC2_barcoding_fitnesses = pandas.read_csv(os.path.join(lineage_fitness_path, 'D1-BC2_barcoding_fitnesses.csv'), skiprows=1, sep='\t', header=None)
         D1_BC3_barcoding_fitnesses = pandas.read_csv(os.path.join(lineage_fitness_path, 'D1-BC3_barcoding_fitnesses.csv'), skiprows=1, sep='\t', header=None)
@@ -353,10 +350,6 @@ class BarcodeScriptsTest(unittest.TestCase):
         self.assertAlmostEqual(numpy.linalg.norm(D1_BC8_barcoding_fitnesses.to_numpy() - reference_D1_BC8_barcoding_fitnesses.to_numpy()), 0.0)
 
         # D1 evolution fitness
-        # Read generated data.
-        lineage_fitness_path = config.lineage_fitness_estimate_directory
-        reference_lineage_fitness_path = lineage_fitness_path.replace('reference_data', 'data')
-
         D1_BC1_evolution_fitnesses = pandas.read_csv(os.path.join(lineage_fitness_path, 'D1-BC1_evolution_fitnesses.csv'), skiprows=1, sep='\t', header=None)
         D1_BC2_evolution_fitnesses = pandas.read_csv(os.path.join(lineage_fitness_path, 'D1-BC2_evolution_fitnesses.csv'), skiprows=1, sep='\t', header=None)
         D1_BC3_evolution_fitnesses = pandas.read_csv(os.path.join(lineage_fitness_path, 'D1-BC3_evolution_fitnesses.csv'), skiprows=1, sep='\t', header=None)
@@ -439,6 +432,29 @@ class BarcodeScriptsTest(unittest.TestCase):
         self.assertAlmostEqual(numpy.linalg.norm(D1_BC6_evolution_fitnesses.to_numpy() - reference_D1_BC6_evolution_fitnesses.to_numpy()), 0.0)
         self.assertAlmostEqual(numpy.linalg.norm(D1_BC7_evolution_fitnesses.to_numpy() - reference_D1_BC7_evolution_fitnesses.to_numpy()), 0.0)
         self.assertAlmostEqual(numpy.linalg.norm(D1_BC8_evolution_fitnesses.to_numpy() - reference_D1_BC8_evolution_fitnesses.to_numpy()), 0.0)
+
+    def test_compile_clone_list(self):
+        """ Run the 'compile_clone_list.sh' script on test data and compare to reference results."""
+        command = " ".join([os.path.join(test_path, 'compile_clone_list.sh'),'C1'])
+        command_tokens = shlex.split(command)
+        proc = Popen(command_tokens, shell=False)
+        proc.wait()
+
+        for i in range(1,10):
+            data_fname =  os.path.join(data_path, 'flags', 'C1-BC{0:d}_flags.tsv'.format(i))
+            data = pandas.read_csv(data_fname, sep='\t', header=0, index_col=0)
+            reference_data_fname =  os.path.join(reference_data_path, 'flags', 'C1-BC{0:d}_flags.tsv'.format(i))
+            reference_data = pandas.read_csv(reference_data_fname, sep='\t', header=0, index_col=0)
+
+            data.sort_index(inplace=True)
+            reference_data.sort_index(inplace=True)
+
+            self.assertDictEqual(data.to_dict(), reference_data.to_dict())
+
+
+
+
+
 
 if __name__ == '__main__':
     unittest.main()
