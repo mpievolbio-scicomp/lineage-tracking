@@ -12,8 +12,9 @@ wgs_data_directory = parent_directory + '/data/wgs/'
 
 # population settings
 populations = ['C1','D1']
+# populations = ['C1test']
 
-max_barcode = {'C1':9,'D1':10}
+max_barcode = {'C1':9,'D1':10, 'C1test':1}
 pop_labels = {'C1':'YPD','D1':'YPA'}
 pop_colors = {'C1':'#232F52', 'D1':'orange'}
 highlighted_barcodes = {'C1':['TCTAAGCGTATTGGTC_ATCCAGCGCTTGGACG','TTTGGCAACCTGGGTG_TATTGCAGTTATGCAG',
