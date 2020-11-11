@@ -2,7 +2,7 @@ import sys, os, glob, csv, re
 import string, math, numpy
 from itertools import takewhile
 
-from lineage import *
+from .lineage import *
 
 def natural_sort(l): 
     convert = lambda text: int(text) if text.isdigit() else text.lower() 
@@ -10,7 +10,7 @@ def natural_sort(l):
     return sorted(l, key = alphanum_key)
 
 def add_nested_dict_item(dict_item,dictionary):
-    for item_key, item_value in dict_item.iteritems():
+    for item_key, item_value in dict_item.items():
         break
     if item_key in dictionary:
         if (isinstance(item_value,dict)):
