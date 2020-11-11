@@ -1,7 +1,7 @@
 import os,sys,inspect
 
 # add modules to path
-parent_directory = os.path.abspath(os.path.pardir)
+parent_directory = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 barcode_data_root_directory = parent_directory + '/data/barcode_frequencies/'
 error_model_directory = parent_directory + '/data/error_model/'
 lineage_fitness_estimate_directory = parent_directory + '/data/relative_fitnesses/'

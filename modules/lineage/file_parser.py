@@ -23,59 +23,59 @@ def add_nested_dict_item(dict_item,dictionary):
 def parse_frequency_file(filename,prepend_zeros = True):
     ######### parses file and returns dictionary of the form {parentID:{lastBarcode:lineage_data}} #######
     ######         NOTE: skips first (population) population barcode. #######
-    f = open(filename,'r')
-    num_bcd_read = False
-    dictionary = {}
-    for row in csv.reader(f,delimiter='\t'):
-        if not num_bcd_read:
-            no_barcodes = 0
-            for bcd in takewhile(lambda x: not x.isdigit(), row):
-                no_barcodes += 1
-            timepoints = numpy.asarray(row[no_barcodes:],dtype = float)
-            num_bcd_read = True
-        else:
-            
-            if prepend_zeros:
-                frequencies = numpy.zeros(11*(no_barcodes-2))
-                frequencies = numpy.concatenate((frequencies,numpy.asarray(row[no_barcodes:],dtype = float)))
+    with open(filename,'r') as f:
+        num_bcd_read = False
+        dictionary = {}
+        for row in csv.reader(f,delimiter='\t'):
+            if not num_bcd_read:
+                no_barcodes = 0
+                for bcd in takewhile(lambda x: not x.isdigit(), row):
+                    no_barcodes += 1
+                timepoints = numpy.asarray(row[no_barcodes:],dtype = float)
+                num_bcd_read = True
             else:
-                frequencies = numpy.asarray(row[no_barcodes:],dtype = float)
-            dict_item = {"_".join(row[1:no_barcodes-1]): \
-                            {row[no_barcodes-1]: \
-                                Lineage('_'.join(row[1:no_barcodes]),frequencies)}}
-            add_nested_dict_item(dict_item,dictionary)
 
-    f.close()
+                if prepend_zeros:
+                    frequencies = numpy.zeros(11*(no_barcodes-2))
+                    frequencies = numpy.concatenate((frequencies,numpy.asarray(row[no_barcodes:],dtype = float)))
+                else:
+                    frequencies = numpy.asarray(row[no_barcodes:],dtype = float)
+                dict_item = {"_".join(row[1:no_barcodes-1]): \
+                                {row[no_barcodes-1]: \
+                                    Lineage('_'.join(row[1:no_barcodes]),frequencies)}}
+                add_nested_dict_item(dict_item,dictionary)
+
+        f.close()
         
     return timepoints, dictionary
 
 def parse_frequency_file_as_matrix(filename):
     # find number of barcodes
-    f = open(filename,'r')
-    num_bcd_read = False
-    for row in csv.reader(f,delimiter='\t'):
-        if not num_bcd_read:
-            no_barcodes = 0
-            for bcd in takewhile(lambda x: not x.isdigit(), row):
-                no_barcodes += 1
-            timepoints = numpy.asarray(row[no_barcodes:],dtype = float)
-            num_bcd_read = True
-        else:
-            pass
-    f.close()
+    with open(filename,'r') as f:
+        num_bcd_read = False
+        for row in csv.reader(f,delimiter='\t'):
+            if not num_bcd_read:
+                no_barcodes = 0
+                for bcd in takewhile(lambda x: not x.isdigit(), row):
+                    no_barcodes += 1
+                timepoints = numpy.asarray(row[no_barcodes:],dtype = float)
+                num_bcd_read = True
+            else:
+                pass
+        f.close()
     usecols = tuple(numpy.arange(len(timepoints)) + no_barcodes)
     freqs = numpy.loadtxt(filename, dtype=float, delimiter='\t', skiprows=1, usecols=usecols)
     return timepoints, freqs
         
 
 def parse_count_file(filename):
-    f = open(filename,'r')
-    count_dict = {}
-    for row in csv.reader(f):
-        row =  row[0].split()
-        count_dict[int(row[0])] = int(row[1])
-    return count_dict
-    f.close()
+    with open(filename,'r') as f:
+        count_dict = {}
+        for row in csv.reader(f):
+            row =  row[0].split()
+            count_dict[int(row[0])] = int(row[1])
+        return count_dict
+        f.close()
 
 
 def get_data(population,root_path,fitness_files = None,as_matrix = False):
@@ -148,17 +148,16 @@ def get_data(population,root_path,fitness_files = None,as_matrix = False):
             return timepoints, freq_matrix, counts
 
 def read_kappas_from_file(kappa_filename):
-    kappa_file = open(kappa_filename,'r')
-    kappa_file.readline()    
-    kappas = numpy.asarray([float(item) for item in kappa_file.readline().strip().split('\t')], dtype = float)
-    return kappas
+    with open(kappa_filename,'r') as kappa_file:
+        kappa_file.readline()
+        kappas = numpy.asarray([float(item) for item in kappa_file.readline().strip().split('\t')], dtype = float)
+        return kappas
     
 
 def read_empirical_null_from_file(empirical_distribution_filename):
-    empirical_distribution_file = open(empirical_distribution_filename,'r')
-    
-    empirical_null = numpy.asarray([float(item) for item in empirical_distribution_file.readline().strip().split('\t')], dtype = float)
-    num_all = len(empirical_null)
+    with open(empirical_distribution_filename,'r') as empirical_distribution_file:
+        empirical_null = numpy.asarray([float(item) for item in empirical_distribution_file.readline().strip().split('\t')], dtype = float)
+        num_all = len(empirical_null)
 
     for t in numpy.sort(empirical_null):
         if ((empirical_null >= t).sum()*1.+1.)/(num_all+1.) <=0.025:
@@ -169,8 +168,8 @@ def read_empirical_null_from_file(empirical_distribution_filename):
     return empirical_null, t_statistic_95_percent_cutoff
 
 def read_q_values_from_file(q_value_filename):
-    q_value_file = open(q_value_filename,'r')
-    q_values = numpy.asarray([float(item) for item in q_value_file.readline().strip().split('\t')], dtype = float)
+    with open(q_value_filename,'r') as q_value_file:
+        q_values = numpy.asarray([float(item) for item in q_value_file.readline().strip().split('\t')], dtype = float)
 
     return q_values
 

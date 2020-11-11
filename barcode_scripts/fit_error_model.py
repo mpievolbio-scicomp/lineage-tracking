@@ -1,8 +1,10 @@
 import sys, os, glob, csv, re
 import string, math, numpy
+import os
 
 # add custom modules to path
-sys.path.insert(0,'../modules/') 
+modules_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'modules'))
+sys.path.insert(0, modules_path)
 
 #custom modules
 import config
