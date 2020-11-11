@@ -5,7 +5,9 @@ import matplotlib.gridspec as gridspec
 from scipy import stats
 
 # add custom modules to path
-sys.path.insert(0,'../modules/') 
+modules_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'modules'))
+sys.path.insert(0, modules_path)
+
 
 # import custom modules
 import config
