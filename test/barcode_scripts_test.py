@@ -5,6 +5,7 @@ import pandas
 import numpy
 import pytest
 import shlex
+from collections import namedtuple
 from subprocess import Popen
 
 # add custom modules to path
@@ -53,7 +54,7 @@ class BarcodeScriptsTest(unittest.TestCase):
     def test_compile_null_distribution(self):
         """ Run 'compile_null_distribution.py' on reference data and compare to reference results."""
         # This runs the script.
-        # import compile_null_distribution
+        import compile_null_distribution
 
         # Read generated data.
         error_model_path = config.error_model_directory
@@ -91,7 +92,7 @@ class BarcodeScriptsTest(unittest.TestCase):
     def test_estimate_relative_fitnesses(self):
         """Run 'estimate_relative_fitness.py' on reference data and compare to reference results."""
         # This runs the script.
-        # import estimate_relative_fitnesses
+        import estimate_relative_fitnesses
 
         # Set paths to data.
         lineage_fitness_path = config.lineage_fitness_estimate_directory
@@ -451,10 +452,139 @@ class BarcodeScriptsTest(unittest.TestCase):
 
             self.assertDictEqual(data.to_dict(), reference_data.to_dict())
 
+    def test_calculate_clone_frequencies(self):
+        """Run 'calculate_clone_frequencies.py' on test data and compare to reference results."""
+        # This runs the script.
+        # import calculate_clone_frequencies
+
+        # Set paths
+        data_path = config.clone_data_directory
+        reference_data_path = data_path.replace("data", "reference_data")
+
+        fnames = [
+            'C1-clone_frequencies.tsv',
+            'D1-clone_frequencies.tsv',
+        ]
+
+        for fname in fnames:
+            data_fpath = os.path.join(data_path, fname)
+            ref_data_fpath = os.path.join(reference_data_path, fname)
+            if not os.path.exists(data_fpath):
+                raise IOError("Expected file does not exist: {}".format(data_fpath))
+
+            data = pandas.read_csv(data_fpath, sep="\t", index_col=[0,1], header=0,)
+            ref_data = pandas.read_csv(ref_data_fpath, sep="\t", index_col=[0,1], header=0,)
+
+            # Sort
+            data.sort_index(level=1, axis=0, inplace=True)
+            ref_data.sort_index(level=1, axis=0, inplace=True)
+
+            # Check.
+            self.assertDictEqual(data.to_dict(),
+                                 ref_data.to_dict(),
+                                 )
+
+        # Check clone list.
+        clone_lists = [
+            'C1_clone_list.tsv',
+            'D1_clone_list.tsv'
+        ]
+
+        for clone_list in clone_lists:
+            data_fpath = os.path.join(data_path, clone_list)
+            ref_data_fpath = os.path.join(reference_data_path, clone_list)
+            if not os.path.exists(data_fpath):
+                raise IOError("Expected file does not exist: {}".format(data_fpath))
+
+            data = pandas.read_csv(data_fpath, sep="\t", index_col=0, header=None, )
+            ref_data = pandas.read_csv(ref_data_fpath, sep="\t", index_col=0, header=None, )
+
+            # Sort
+            data.sort_index(level=1, axis=0, inplace=True)
+            ref_data.sort_index(level=1, axis=0, inplace=True)
+
+            # Check.
+            self.assertDictEqual(data.to_dict(),
+                                 ref_data.to_dict(),
+                                 )
+
+    def test_measure_evolution_fitness(self):
+        """ Run 'measure_evolution_fitness.py' on test data and compare to reference data."""
+
+        import measure_evolution_fitness
+
+        # Construct mock input arguments.
+        Args = namedtuple('args', ['pop_name',])
+        args = Args('C1')
+        measure_evolution_fitness.main(args)
+
+        args = Args('D1')
+        measure_evolution_fitness.main(args)
+
+        # Set paths
+        data_path = config.clone_data_directory
+        reference_data_path = data_path.replace("data", "reference_data")
+
+        fnames = [
+            'C1-evolution_fitnesses.tsv',
+            'D1-evolution_fitnesses.tsv',
+        ]
+
+        for fname in fnames:
+            data_fpath = os.path.join(data_path, fname)
+            ref_data_fpath = os.path.join(reference_data_path, fname)
+            if not os.path.exists(data_fpath):
+                raise IOError("Expected file does not exist: {}".format(data_fpath))
+
+            data = pandas.read_csv(data_fpath, sep="\t", index_col=0, header=0, )
+            ref_data = pandas.read_csv(ref_data_fpath, sep="\t", index_col=0, header=0, )
+
+            # Sort
+            data.sort_index(inplace=True)
+            ref_data.sort_index(inplace=True)
+
+            # Check. Round-off errors make this imprecise.
+            self.assertAlmostEqual(numpy.linalg.norm(data.to_numpy() - ref_data.to_numpy()), 0.0, delta=0.1)
 
 
+    def test_measure_barcoding_fitness(self):
+        """ Run 'measure_barcodingevolution_fitness.py' on test data and compare to reference data."""
 
+        import measure_barcoding_fitness
 
+        # Construct mock input arguments.
+        Args = namedtuple('args', ['pop_name',])
+
+        args = Args('C1')
+        measure_barcoding_fitness.main(args)
+
+        args = Args('D1')
+        measure_barcoding_fitness.main(args)
+
+        # Set paths
+        data_path = config.clone_data_directory
+        reference_data_path = data_path.replace("data", "reference_data")
+
+        fnames = [
+            'C1-barcoding_fitnesses.tsv',
+            'D1-barcoding_fitnesses.tsv',
+        ]
+
+        for fname in fnames:
+            data_fpath = os.path.join(data_path, fname)
+            ref_data_fpath = os.path.join(reference_data_path, fname)
+            if not os.path.exists(data_fpath):
+                raise IOError("Expected file does not exist: {}".format(data_fpath))
+
+            data = pandas.read_csv(data_fpath, sep="\t", index_col=0, header=0, )
+            ref_data = pandas.read_csv(ref_data_fpath, sep="\t", index_col=0, header=0, )
+
+            # Sort
+            data.sort_index(inplace=True)
+            ref_data.sort_index(inplace=True)
+
+            # Check. Round-off errors make this imprecise.
+            self.assertAlmostEqual(numpy.linalg.norm(data.to_numpy() - ref_data.to_numpy()), 0.0, delta=0.1)
 
 if __name__ == '__main__':
     unittest.main()

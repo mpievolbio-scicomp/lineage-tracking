@@ -12,7 +12,8 @@ import matplotlib.gridspec as gridspec
 import numpy.ma as ma
 
 # add custom modules to path
-sys.path.insert(0,'../modules/') 
+modules_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'modules'))
+sys.path.insert(0, modules_path)
 
 # import custom modules
 import config
@@ -21,172 +22,177 @@ import lineage.inference_params as inference_params
 
 import lineage.file_parser as file_parser
 from lineage.read_clone_data import *
-            
 
-parser = argparse.ArgumentParser()
-parser.add_argument("pop_name", help='name of population')
+def main(args):
+    population = args.pop_name
 
-args = parser.parse_args()
+    ENVIRONMENT = 'barcoding'
 
-population = args.pop_name
+    coverage_directory = config.barcode_data_root_directory + population +'/'
 
-ENVIRONMENT = 'barcoding'
+    count_file = glob.glob(coverage_directory+population+'*read_coverage.txt')[0]
+    count_dict = file_parser.parse_count_file(count_file)
+    counts = numpy.asarray([count_dict[key] for key in sorted(count_dict.keys())])
 
-coverage_directory = config.barcode_data_root_directory + population +'/'
+    kappas = file_parser.read_kappas_from_file(config.error_model_directory + population + '-kappas.tsv')
 
-count_file = glob.glob(coverage_directory+population+'*read_coverage.txt')[0]
-count_dict = file_parser.parse_count_file(count_file)
-counts = numpy.asarray([count_dict[key] for key in sorted(count_dict.keys())])
+    clone_list, times, clone_dict, lineage_dict, population_tree  = read_clone_data(population, read_fitness = False, assign_colors = False)
 
-kappas = file_parser.read_kappas_from_file(config.error_model_directory + population + '-kappas.tsv')
+    max_barcode = config.max_barcode[population]
 
-clone_list, times, clone_dict, lineage_dict, population_tree  = read_clone_data(population, read_fitness = False, assign_colors = False)
+    bc_fitness_dict = {}
+    bc_fitness_ci_dict = {}
 
-max_barcode = config.max_barcode[population]
+    converged = False
+    it = 0
+    max_iterations = 100
+    negative_llhs = [10**40]
 
-bc_fitness_dict = {}
-bc_fitness_ci_dict = {}
+    for clone_ID in clone_dict.keys():
+        bc_fitness_dict.update({clone_ID : 0. })
+        bc_fitness_ci_dict.update({clone_ID : numpy.zeros(2) })
 
-converged = False
-it = 0
-max_iterations = 100
-negative_llhs = [10**40]
+    population_mean_fitness = numpy.zeros(2*max_barcode-2)
 
-for clone_ID in clone_dict.keys():
-    bc_fitness_dict.update({clone_ID : 0. })
-    bc_fitness_ci_dict.update({clone_ID : numpy.zeros(2) })
+    barcoding_kappas = kappas[10::11][:max_barcode-1]
 
-population_mean_fitness = numpy.zeros(2*max_barcode-2)
-
-barcoding_kappas = kappas[10::11][:max_barcode-1]
-
-bc_count_ratios = counts[11::11]*1./(counts[10::11][:-1])
-bc_count_ratios = bc_count_ratios[:max_barcode-1]
+    bc_count_ratios = counts[11::11]*1./(counts[10::11][:-1])
+    bc_count_ratios = bc_count_ratios[:max_barcode-1]
 
 
-num_fitnesses = inference_params.num_fitnesses
-fitness_grid = inference_params.fitness_grid[ENVIRONMENT]*inference_params.scale_fitness_per_interval[ENVIRONMENT]
+    num_fitnesses = inference_params.num_fitnesses
+    fitness_grid = inference_params.fitness_grid[ENVIRONMENT]*inference_params.scale_fitness_per_interval[ENVIRONMENT]
 
-bc_fitness_dict = {}
-bc_fitness_ci_dict = {}
+    bc_fitness_dict = {}
+    bc_fitness_ci_dict = {}
 
-total_intervals = inference_params.BARCODING_INTERVALS_PER_EPOCH*(max_barcode -1)
+    total_intervals = inference_params.BARCODING_INTERVALS_PER_EPOCH*(max_barcode -1)
 
-# initialize clone fitnesses to zero
+    # initialize clone fitnesses to zero
 
-current_clone_fitnesses = numpy.zeros( (len(clone_dict.keys())) )
-current_clone_fitness_CI_lower = numpy.zeros( (len(clone_dict.keys())) )
-current_clone_fitness_CI_upper = numpy.zeros( (len(clone_dict.keys())) )
-# initialize up matrices fo clone counts before and after barcoding
-clone_counts_before = numpy.ones( (len(clone_dict.keys()),total_intervals) )
-clone_counts_after = numpy.ones( (len(clone_dict.keys()),total_intervals) )
-clone_freqs_before = numpy.ones( (len(clone_dict.keys()),total_intervals) )
-clone_freqs_after = numpy.ones( (len(clone_dict.keys()),total_intervals) ) 
+    current_clone_fitnesses = numpy.zeros( (len(clone_dict.keys())) )
+    current_clone_fitness_CI_lower = numpy.zeros( (len(clone_dict.keys())) )
+    current_clone_fitness_CI_upper = numpy.zeros( (len(clone_dict.keys())) )
+    # initialize up matrices fo clone counts before and after barcoding
+    clone_counts_before = numpy.ones( (len(clone_dict.keys()),total_intervals) )
+    clone_counts_after = numpy.ones( (len(clone_dict.keys()),total_intervals) )
+    clone_freqs_before = numpy.ones( (len(clone_dict.keys()),total_intervals) )
+    clone_freqs_after = numpy.ones( (len(clone_dict.keys()),total_intervals) )
 
-for i,key in enumerate(clone_dict.keys()):
-    lineage = clone_dict[key]
+    for i,key in enumerate(clone_dict.keys()):
+        lineage = clone_dict[key]
 
-    clone_counts_before[i] = (lineage.freqs*counts)[10::11][:-1][:max_barcode-1]
-    clone_counts_after[i] = (lineage.freqs*counts)[11::11][:max_barcode-1]
+        clone_counts_before[i] = (lineage.freqs*counts)[10::11][:-1][:max_barcode-1]
+        clone_counts_after[i] = (lineage.freqs*counts)[11::11][:max_barcode-1]
 
-    clone_freqs_before[i] = (lineage.freqs)[10::11][:-1][:max_barcode-1]
-    clone_freqs_after[i] = (lineage.freqs)[11::11][:max_barcode-1]
+        clone_freqs_before[i] = (lineage.freqs)[10::11][:-1][:max_barcode-1]
+        clone_freqs_after[i] = (lineage.freqs)[11::11][:max_barcode-1]
 
-# initialize grid containing expectations of frequencies given fitness vectors
-expectation_grid = numpy.ones( (len(clone_dict.keys()),total_intervals,len(fitness_grid)) )
+    # initialize grid containing expectations of frequencies given fitness vectors
+    expectation_grid = numpy.ones( (len(clone_dict.keys()),total_intervals,len(fitness_grid)) )
 
-#initialize mask for low frequency counts
-mask = clone_counts_before > inference_params.threshold_lineage_size
+    #initialize mask for low frequency counts
+    mask = clone_counts_before > inference_params.threshold_lineage_size
 
-#now for the coordinate descent
+    #now for the coordinate descent
 
-#iterate until convergence or until max_iterations have been completed 
-it = -1
-while it < max_iterations:
-    it += 1    
-    #loop through clones
-    for this_clone_index, this_clone in enumerate(clone_dict.keys()):
-        if sum(mask[this_clone_index]) > 0:
-            other_clones = numpy.ones(len(clone_dict.keys()),dtype = bool)
-            other_clones[this_clone_index] = False
-            
-            other_lineages_unnormalized_frequencies = numpy.einsum('ij,i->ij',clone_freqs_before[other_clones],numpy.exp(current_clone_fitnesses[other_clones]))
-            other_lineages_total_unnormalized_frequency = numpy.sum(clone_freqs_before[other_clones].T * numpy.exp(current_clone_fitnesses[other_clones]),axis = 1)        
-            this_lineage_unnormalized_frequency = numpy.outer(clone_freqs_before[this_clone_index],numpy.exp(fitness_grid))
-            total_unnormalized_frequency = numpy.outer(other_lineages_total_unnormalized_frequency,numpy.ones(len(fitness_grid))) + this_lineage_unnormalized_frequency
+    #iterate until convergence or until max_iterations have been completed
+    it = -1
+    while it < max_iterations:
+        it += 1
+        #loop through clones
+        for this_clone_index, this_clone in enumerate(clone_dict.keys()):
+            if sum(mask[this_clone_index]) > 0:
+                other_clones = numpy.ones(len(clone_dict.keys()),dtype = bool)
+                other_clones[this_clone_index] = False
 
-            expectation_grid[other_clones] = numpy.repeat(other_lineages_unnormalized_frequencies[:, :, numpy.newaxis], len(fitness_grid), axis=2)
-            expectation_grid[this_clone_index] = this_lineage_unnormalized_frequency
+                other_lineages_unnormalized_frequencies = numpy.einsum('ij,i->ij',clone_freqs_before[other_clones],numpy.exp(current_clone_fitnesses[other_clones]))
+                other_lineages_total_unnormalized_frequency = numpy.sum(clone_freqs_before[other_clones].T * numpy.exp(current_clone_fitnesses[other_clones]),axis = 1)
+                this_lineage_unnormalized_frequency = numpy.outer(clone_freqs_before[this_clone_index],numpy.exp(fitness_grid))
+                total_unnormalized_frequency = numpy.outer(other_lineages_total_unnormalized_frequency,numpy.ones(len(fitness_grid))) + this_lineage_unnormalized_frequency
 
-            expectation_grid = expectation_grid/total_unnormalized_frequency
-            expectation_grid = numpy.einsum('ijk,j->ijk', expectation_grid, counts[11::11][:max_barcode-1])
+                expectation_grid[other_clones] = numpy.repeat(other_lineages_unnormalized_frequencies[:, :, numpy.newaxis], len(fitness_grid), axis=2)
+                expectation_grid[this_clone_index] = this_lineage_unnormalized_frequency
 
-            expectation_grid[expectation_grid < 1] = 1
-            clone_counts_after[clone_counts_after<1] = 1
+                expectation_grid = expectation_grid/total_unnormalized_frequency
+                expectation_grid = numpy.einsum('ijk,j->ijk', expectation_grid, counts[11::11][:max_barcode-1])
 
-            #calculate negative log likelihoods
-            llhs = (numpy.sqrt(expectation_grid) - numpy.sqrt(clone_counts_after[:,:,numpy.newaxis]))**2
-            llhs = numpy.einsum('ijk,j->ijk',llhs,1./barcoding_kappas)
-            llhs += 0.75* numpy.log(clone_counts_after[:,:,numpy.newaxis])
-            llhs += -0.25* numpy.log(expectation_grid) 
-            llhs += 0.5 * numpy.log(4*numpy.pi*barcoding_kappas[numpy.newaxis,:,numpy.newaxis])
+                expectation_grid[expectation_grid < 1] = 1
+                clone_counts_after[clone_counts_after<1] = 1
+
+                #calculate negative log likelihoods
+                llhs = (numpy.sqrt(expectation_grid) - numpy.sqrt(clone_counts_after[:,:,numpy.newaxis]))**2
+                llhs = numpy.einsum('ijk,j->ijk',llhs,1./barcoding_kappas)
+                llhs += 0.75* numpy.log(clone_counts_after[:,:,numpy.newaxis])
+                llhs += -0.25* numpy.log(expectation_grid)
+                llhs += 0.5 * numpy.log(4*numpy.pi*barcoding_kappas[numpy.newaxis,:,numpy.newaxis])
 
 
-            llhs = numpy.einsum('ijk,ij->ijk',llhs,mask)
+                llhs = numpy.einsum('ijk,ij->ijk',llhs,mask)
 
-            llhs = numpy.einsum('ijk->k',llhs)
+                llhs = numpy.einsum('ijk->k',llhs)
 
-            current_clone_fitnesses[this_clone_index] = fitness_grid[llhs == min(llhs)][0]
-            fitness_CI_range = fitness_grid[llhs < 2+ min(llhs)]
-            current_clone_fitness_CI_lower[this_clone_index] = fitness_CI_range[0]
-            current_clone_fitness_CI_upper[this_clone_index] = fitness_CI_range[-1]
+                current_clone_fitnesses[this_clone_index] = fitness_grid[llhs == min(llhs)][0]
+                fitness_CI_range = fitness_grid[llhs < 2+ min(llhs)]
+                current_clone_fitness_CI_lower[this_clone_index] = fitness_CI_range[0]
+                current_clone_fitness_CI_upper[this_clone_index] = fitness_CI_range[-1]
 
-            if this_clone == "":
-                # pin ancestor fitness at 0
-                current_clone_fitnesses -= current_clone_fitnesses[this_clone_index]
-                current_clone_fitness_CI_lower -= current_clone_fitnesses[this_clone_index]
-                current_clone_fitness_CI_upper -= current_clone_fitnesses[this_clone_index]
+                if this_clone == "":
+                    # pin ancestor fitness at 0
+                    current_clone_fitnesses -= current_clone_fitnesses[this_clone_index]
+                    current_clone_fitness_CI_lower -= current_clone_fitnesses[this_clone_index]
+                    current_clone_fitness_CI_upper -= current_clone_fitnesses[this_clone_index]
 
-            if len(fitness_grid[llhs == min(llhs)]) > 1:
-                print(len(fitness_grid[llhs == min(llhs)]), "solutions work equally well")
-                print(sum(mask[this_clone_index]))
-        else:
-            # if there are no good barcoding intervals,
-            # look for ancestor, and copy their fitness onto this child
-            ancestors = list(ancestor_list(this_clone, population_tree))
-            if len(ancestors)>0:
-                parent_ID = ancestors[-1]
+                if len(fitness_grid[llhs == min(llhs)]) > 1:
+                    print(len(fitness_grid[llhs == min(llhs)]), "solutions work equally well")
+                    print(sum(mask[this_clone_index]))
             else:
-                parent_ID = ''
-            parent_index = [i for i, s in enumerate(clone_dict.keys()) if parent_ID == s][0]
-            current_clone_fitnesses[this_clone_index] = current_clone_fitnesses[parent_index]
-            current_clone_fitness_CI_lower[this_clone_index] = fitness_grid[0]
-            current_clone_fitness_CI_upper[this_clone_index] = fitness_grid[-1]        
+                # if there are no good barcoding intervals,
+                # look for ancestor, and copy their fitness onto this child
+                ancestors = list(ancestor_list(this_clone, population_tree))
+                if len(ancestors)>0:
+                    parent_ID = ancestors[-1]
+                else:
+                    parent_ID = ''
+                parent_index = [i for i, s in enumerate(clone_dict.keys()) if parent_ID == s][0]
+                current_clone_fitnesses[this_clone_index] = current_clone_fitnesses[parent_index]
+                current_clone_fitness_CI_lower[this_clone_index] = fitness_grid[0]
+                current_clone_fitness_CI_upper[this_clone_index] = fitness_grid[-1]
 
-    negative_llhs.append(min(llhs))
-    if abs(negative_llhs[-1] - negative_llhs[-2])<0.001:
-        print('Converged after', it, 'iterations.')
-        print('Negative log-likelihood for each iteration:')
-        print(negative_llhs)
-        break
-for this_clone_index,this_clone in enumerate(clone_dict.keys()):
-    ID = this_clone
-    bc_fitness_dict[ID] = current_clone_fitnesses[this_clone_index]
-    bc_fitness_ci_dict[ID] = [current_clone_fitness_CI_lower[this_clone_index],current_clone_fitness_CI_upper[this_clone_index]]
+        negative_llhs.append(min(llhs))
+        if abs(negative_llhs[-1] - negative_llhs[-2])<0.001:
+            print('Converged after', it, 'iterations.')
+            print('Negative log-likelihood for each iteration:')
+            print(negative_llhs)
+            break
+    for this_clone_index,this_clone in enumerate(clone_dict.keys()):
+        ID = this_clone
+        bc_fitness_dict[ID] = current_clone_fitnesses[this_clone_index]
+        bc_fitness_ci_dict[ID] = [current_clone_fitness_CI_lower[this_clone_index],current_clone_fitness_CI_upper[this_clone_index]]
 
-with open(config.clone_data_directory+'%s-%s_fitnesses.tsv' % (population,ENVIRONMENT), 'w') as csvfile:
-    out_writer = csv.writer(csvfile, delimiter='\t', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    out_writer.writerow(['BC'] + ['Barcoding Fitness (per barcoding procedure)', 'CI_lower', 'CI_upper'])
+    with open(config.clone_data_directory+'%s-%s_fitnesses.tsv' % (population,ENVIRONMENT), 'w') as csvfile:
+        out_writer = csv.writer(csvfile, delimiter='\t', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        out_writer.writerow(['BC'] + ['Barcoding Fitness (per barcoding procedure)', 'CI_lower', 'CI_upper'])
 
-    clone_list.append("")
-    for ID in clone_list:
-        lineage = clone_dict[ID]
-        if lineage.ID == '':
-            row = ['ancestor']
-        else:
-            row = [lineage.ID]
-        row.extend([bc_fitness_dict[lineage.ID]])
-        row.extend(bc_fitness_ci_dict[lineage.ID])
-        out_writer.writerow(row)
+        clone_list.append("")
+        for ID in clone_list:
+            lineage = clone_dict[ID]
+            if lineage.ID == '':
+                row = ['ancestor']
+            else:
+                row = [lineage.ID]
+            row.extend([bc_fitness_dict[lineage.ID]])
+            row.extend(bc_fitness_ci_dict[lineage.ID])
+            out_writer.writerow(row)
+
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("pop_name", help='name of population')
+
+    args = parser.parse_args()
+
+    main(args)
 
 
