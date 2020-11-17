@@ -455,7 +455,7 @@ class BarcodeScriptsTest(unittest.TestCase):
     def test_calculate_clone_frequencies(self):
         """Run 'calculate_clone_frequencies.py' on test data and compare to reference results."""
         # This runs the script.
-        # import calculate_clone_frequencies
+        import calculate_clone_frequencies
 
         # Set paths
         data_path = config.clone_data_directory
