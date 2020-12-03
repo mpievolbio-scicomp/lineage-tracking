@@ -180,7 +180,6 @@ def determine_q_values(data, fitness_estimator, max_barcodes, barcoding = False)
 
     empirical_null = []
     
-    breakpoint()
     for target_epoch in range(0,max_barcodes):
             
         test_statistic = []

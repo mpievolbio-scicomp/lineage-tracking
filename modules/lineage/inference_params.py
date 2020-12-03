@@ -17,7 +17,7 @@ fitness_grid = {'barcoding':barcoding_fitness_grid,'evolution':evolution_fitness
 # assign a number of generations per interval
 scale_fitness_per_interval = {'barcoding' : 1., 'evolution':10.}
 
-EVOLUTION_INTERVALS_PER_EPOCH = 10
+EVOLUTION_INTERVALS_PER_EPOCH = 5
 BARCODING_INTERVALS_PER_EPOCH = 0
 
 INTERVALS_PER_EPOCH = BARCODING_INTERVALS_PER_EPOCH + EVOLUTION_INTERVALS_PER_EPOCH
