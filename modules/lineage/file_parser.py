@@ -23,7 +23,7 @@ def add_nested_dict_item(dict_item,dictionary):
 
 def parse_frequency_file(filename,prepend_zeros = True, split_into_epochs=False):
     ######### parses file and returns dictionary of the form {parentID:{lastBarcode:lineage_data}} #######
-    ######         NOTE: skips first (population) population barcode. #######
+    ###### NOTE: skips first (population) population barcode. #######
     with open(filename,'r') as f:
         num_bcd_read = False
         dictionary = {}

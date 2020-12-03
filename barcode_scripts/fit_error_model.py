@@ -16,7 +16,7 @@ drifting_lineage_size_range = inference_params.drifting_lineage_size_range
 
 INTERVALS_PER_EPOCH = inference_params.INTERVALS_PER_EPOCH
 EVOLUTION_INTERVALS_PER_EPOCH = inference_params.EVOLUTION_INTERVALS_PER_EPOCH
-
+NUMBER_OF_EPOCHS = inference_params.NUMBER_OF_EPOCHS
 
 for population in config.populations:
 
@@ -35,7 +35,10 @@ for population in config.populations:
     kappa_errors = numpy.zeros(len(timepoints[0])-1)
     ns = numpy.zeros(len(timepoints[0])-1)
     
+    # In the original code, max_barcode is identical to the number of epochs. In
+    # our case, we have multiple epochs, but only one barcode.
     for timepoint in range(0,max_barcode*INTERVALS_PER_EPOCH-1):
+#     for timepoint in range(0,NUMBER_OF_EPOCHS*INTERVALS_PER_EPOCH-1):
         
         epoch = timepoint // INTERVALS_PER_EPOCH
         t = timepoint % INTERVALS_PER_EPOCH

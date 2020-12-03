@@ -76,8 +76,6 @@ for population in config.populations:
 
                     for parent_id in data[using_barcode].keys():
                         for bcd, lineage in data[using_barcode][parent_id].items():
-#                             if bcd == "TACAGGGGATGAAGCT":
-#                                 breakpoint()
                             fitness_estimator.update_lineage_fitness(lineage, target_epoch, barcoding = barcoding)
                     
                     fitness_estimator.update_mean_fitness(data[using_barcode], target_epoch, barcoding = barcoding)
@@ -99,7 +97,8 @@ for population in config.populations:
 
                 for parent_id in data[using_barcode - 1].keys():
                     for bcd, lineage in data[using_barcode - 1][parent_id].items():
-                        if any(lineage.relative_fitness > 0):
+                        # if any(lineage.relative_fitness > 0):
+                        if True:
                             barcode_lists[environment].append(lineage.ID)
 
                             row = [lineage.ID]

@@ -15,14 +15,14 @@ populations = [
 #                'C1',
 #                'D1'
 #                'C1test',
-#                'LTtest',
-               'LTtest_10epochs',
+               'LTtest',
+#                'LTtest_10epochs',
               ]
 
 max_barcode = {'C1':9,
                'D1':10,
                'C1test':9,
-               'LTtest':1,
+               'LTtest':2,
                'LTtest_10epochs': 1,
               }
 
