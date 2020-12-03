@@ -3,6 +3,7 @@ import string, math, numpy
 from itertools import takewhile
 
 from .lineage import *
+from .inference_params import INTERVALS_PER_EPOCH
 
 def natural_sort(l): 
     convert = lambda text: int(text) if text.isdigit() else text.lower() 
@@ -20,7 +21,7 @@ def add_nested_dict_item(dict_item,dictionary):
     else:
         dictionary[item_key] = item_value
 
-def parse_frequency_file(filename,prepend_zeros = True):
+def parse_frequency_file(filename,prepend_zeros = True, split_into_epochs=False):
     ######### parses file and returns dictionary of the form {parentID:{lastBarcode:lineage_data}} #######
     ######         NOTE: skips first (population) population barcode. #######
     with open(filename,'r') as f:
@@ -40,6 +41,7 @@ def parse_frequency_file(filename,prepend_zeros = True):
                     frequencies = numpy.concatenate((frequencies,numpy.asarray(row[no_barcodes:],dtype = float)))
                 else:
                     frequencies = numpy.asarray(row[no_barcodes:],dtype = float)
+                
                 dict_item = {"_".join(row[1:no_barcodes-1]): \
                                 {row[no_barcodes-1]: \
                                     Lineage('_'.join(row[1:no_barcodes]),frequencies)}}
@@ -92,6 +94,7 @@ def get_data(population,root_path,fitness_files = None,as_matrix = False):
 
         freq_files = natural_sort(glob.glob(directory+population+'*BC*_frequencies.txt'))
         count_files = glob.glob(directory+population+'*read_coverage.txt')        
+        print(directory, population, count_files)
 
         # read total read depth from file
         for filename in count_files:
@@ -102,11 +105,11 @@ def get_data(population,root_path,fitness_files = None,as_matrix = False):
             # read barcodes and their frequencies and return a dictionary of lineages
             data, timepoints = [], []
             for filename in freq_files:
-                times, dataset = parse_frequency_file(filename)
+                times, dataset = parse_frequency_file(filename, split_into_epochs=True)
                 data.append(dataset)
                 timepoints.append(times)
             sys.stderr.write("\tcompleted!\n")
-
+            
             if fitness_files is not None:
                 sys.stderr.write(" reading fitness inferences...\n")
                 for filename in fitness_files:
@@ -145,6 +148,12 @@ def get_data(population,root_path,fitness_files = None,as_matrix = False):
                 timepoints.append(times)
                 freq_matrix.append(freqs)
             sys.stderr.write("\tcompleted!\n")
+            
+#             if len(freq_matrix) == 1:
+#                 # Split data into epochs
+#                 freq_matrix = [freq_matrix[0][:,i*INTERVALS_PER_EPOCH:] for i in range(freq_matrix[0].shape[1]//INTERVALS_PER_EPOCH)]
+#                 timepoints = [timepoints[0][i*INTERVALS_PER_EPOCH:] for i in range(len(timepoints[0])//INTERVALS_PER_EPOCH)]
+                
             return timepoints, freq_matrix, counts
 
 def read_kappas_from_file(kappa_filename):

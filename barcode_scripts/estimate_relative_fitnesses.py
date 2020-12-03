@@ -20,12 +20,16 @@ for population in config.populations:
     #read data
     timepoints, data, counts = file_parser.get_data(population, config.barcode_data_root_directory)
     max_barcode = config.max_barcode[population]
+    
 
     #read kappas
     kappas = file_parser.read_kappas_from_file(config.error_model_directory+population+'-kappas.tsv')
 
     #loop through the different environments
-    for environment in ['evolution','barcoding']:
+    environments = ['barcoding', 'evolution']
+    if inference_params.BARCODING_INTERVALS_PER_EPOCH == 0:
+        environments = ['evolution']
+    for environment in environments:
 
         #read empirical null distribution and q-values
         empirical_null, t_statistic_95_percent_cutoff = file_parser.read_empirical_null_from_file(
@@ -41,7 +45,7 @@ for population in config.populations:
                                                 empirical_null = empirical_null
                                             )
 
-        barcoding = environment == 'barcoding'
+        barcoding = (environment == 'barcoding')
 
         #estimate relative fitnesses
         #ensure all lineage fitnesses are zero to start with
@@ -72,6 +76,8 @@ for population in config.populations:
 
                     for parent_id in data[using_barcode].keys():
                         for bcd, lineage in data[using_barcode][parent_id].items():
+#                             if bcd == "TACAGGGGATGAAGCT":
+#                                 breakpoint()
                             fitness_estimator.update_lineage_fitness(lineage, target_epoch, barcoding = barcoding)
                     
                     fitness_estimator.update_mean_fitness(data[using_barcode], target_epoch, barcoding = barcoding)
@@ -105,7 +111,6 @@ for population in config.populations:
                             out_writer.writerow(row)
     sys.stderr.write('A total of %d barcodes in the __evolution__ environment have been found.\n'
                                     %(len(barcode_lists['evolution'])))    
-    sys.stderr.write('A total of %d barcodes in the __barcoding__ environment have been found.\n'
-                                  %(len(barcode_lists['barcoding'])))
-    num_in_both = sum([1 for ID in barcode_lists['barcoding'] if ID in barcode_lists['evolution'] ])
-    sys.stderr.write('\t   %d are selected in __  both  __ environments.\n'%(num_in_both))    
+#     sys.stderr.write('A total of %d barcodes in the __barcoding__ environment have been found.\n' %(len(barcode_lists['barcoding'])))
+#     num_in_both = sum([1 for ID in barcode_lists['barcoding'] if ID in barcode_lists['evolution'] ])
+#     sys.stderr.write('\t   %d are selected in __  both  __ environments.\n'%(num_in_both))    

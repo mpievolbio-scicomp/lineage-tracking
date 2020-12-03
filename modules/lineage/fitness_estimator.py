@@ -32,6 +32,7 @@ class FitnessEstimator:
         else:
             begin = in_epoch * inference_params.INTERVALS_PER_EPOCH
             end = begin + inference_params.EVOLUTION_INTERVALS_PER_EPOCH + 1
+            end = begin + inference_params.EVOLUTION_INTERVALS_PER_EPOCH
 
         return begin, end
 
@@ -59,8 +60,8 @@ class FitnessEstimator:
         expectations[expectations < 1] = 1
 
         #evaluate negative log likelihood
-        llhs = np.sum((np.sqrt(expectations) - np.sqrt(observed[1:]))**2/self.k[begin:end-1] 
-                        + 0.75* np.log(observed[1:]) - 0.25* np.log(expectations)
+        llhs = np.sum(
+            (np.sqrt(expectations) - np.sqrt(observed[1:]))**2/self.k[begin:end-1]  + 0.75* np.log(observed[1:]) - 0.25* np.log(expectations)
                         + 0.5 * np.log(4*np.pi*self.k[begin:end-1])
                     , axis = 1)    
         return llhs
@@ -179,6 +180,7 @@ def determine_q_values(data, fitness_estimator, max_barcodes, barcoding = False)
 
     empirical_null = []
     
+    breakpoint()
     for target_epoch in range(0,max_barcodes):
             
         test_statistic = []

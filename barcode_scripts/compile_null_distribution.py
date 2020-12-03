@@ -16,15 +16,18 @@ import lineage.file_parser as file_parser
 from lineage.fitness_estimator import *
 
 for population in config.populations:
-
+    
     timepoints, data, counts = file_parser.get_data(population, config.barcode_data_root_directory)
     kappas = file_parser.read_kappas_from_file(config.error_model_directory + population + '-kappas.tsv')
 
     fitness_estimator = FitnessEstimator(counts,kappas)
 
     max_barcode = config.max_barcode[population]    
-
-    for environment in ['barcoding', 'evolution']:
+    
+    environments = ['barcoding', 'evolution']
+    if inference_params.BARCODING_INTERVALS_PER_EPOCH == 0:
+        environments = ['evolution']
+    for environment in environments:
         barcoding = environment == 'barcoding'
         q_values, empirical_null, t_statistic_95_percent_cutoff = determine_q_values(data,fitness_estimator,max_barcode - barcoding,barcoding = barcoding)
 
