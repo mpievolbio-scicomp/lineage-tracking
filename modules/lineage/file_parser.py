@@ -1,6 +1,9 @@
 import sys, os, glob, csv, re
 import string, math, numpy
 from itertools import takewhile
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 from .lineage import *
 from .inference_params import INTERVALS_PER_EPOCH
@@ -89,12 +92,12 @@ def get_data(population,root_path,fitness_files = None,as_matrix = False):
         sys.stderr.write("Error: directory not found \n \t attempted: "+directory+'\n')
         return [], {}, []
     else:
-        sys.stderr.write("processing population %s...\n" % population)
-        sys.stderr.write("\treading files...")
+        logging.info("Processing population %s.", population)
+        logging.info("Reading files.")
 
         freq_files = natural_sort(glob.glob(directory+population+'*BC*_frequencies.txt'))
         count_files = glob.glob(directory+population+'*read_coverage.txt')        
-        print(directory, population, count_files)
+        logging.debug([directory, population, count_files])
 
         # read total read depth from file
         for filename in count_files:
@@ -108,10 +111,10 @@ def get_data(population,root_path,fitness_files = None,as_matrix = False):
                 times, dataset = parse_frequency_file(filename, split_into_epochs=True)
                 data.append(dataset)
                 timepoints.append(times)
-            sys.stderr.write("\tcompleted!\n")
+            logging.info("Reading files complete.")
             
             if fitness_files is not None:
-                sys.stderr.write(" reading fitness inferences...\n")
+                logging.info("Reading fitness inferences.")
                 for filename in fitness_files:
                     f = open(filename,'r')
                     f.readline()
@@ -147,13 +150,8 @@ def get_data(population,root_path,fitness_files = None,as_matrix = False):
                 times, freqs = parse_frequency_file_as_matrix(filename)
                 timepoints.append(times)
                 freq_matrix.append(freqs)
-            sys.stderr.write("\tcompleted!\n")
+            logging.info("Reading fitness inferences complete.")
             
-#             if len(freq_matrix) == 1:
-#                 # Split data into epochs
-#                 freq_matrix = [freq_matrix[0][:,i*INTERVALS_PER_EPOCH:] for i in range(freq_matrix[0].shape[1]//INTERVALS_PER_EPOCH)]
-#                 timepoints = [timepoints[0][i*INTERVALS_PER_EPOCH:] for i in range(len(timepoints[0])//INTERVALS_PER_EPOCH)]
-                
             return timepoints, freq_matrix, counts
 
 def read_kappas_from_file(kappa_filename):
@@ -181,6 +179,3 @@ def read_q_values_from_file(q_value_filename):
         q_values = numpy.asarray([float(item) for item in q_value_file.readline().strip().split('\t')], dtype = float)
 
     return q_values
-
-
-

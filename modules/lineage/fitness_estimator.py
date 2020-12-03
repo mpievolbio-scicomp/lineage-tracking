@@ -4,6 +4,9 @@ from scipy.optimize import minimize
 import random
 import sys
 from scipy.stats import chi2
+import logging
+
+logging.basicConfig(level=logging.INFO) 
 
 from .lineage import *
 from . import inference_params
@@ -13,7 +16,8 @@ class FitnessEstimator:
     def __init__(self, counts, kappas, 
                     qvals = None, 
                     t_statistic_95_percent_cutoff = None, 
-                    empirical_null = None):
+                    empirical_null = None
+                ):
         # initialize population-level observables
         self.total_reads = counts*1.0
         self.ratio_of_read_depths = self.total_reads[1:]/self.total_reads[:-1]
