@@ -30,15 +30,7 @@ class FitnessEstimator:
         self.empirical_null = empirical_null
 
     def get_interval_endpoints(self, in_epoch, barcoding = False):
-        if barcoding:
-            begin = in_epoch*inference_params.INTERVALS_PER_EPOCH + inference_params.EVOLUTION_INTERVALS_PER_EPOCH
-            end = begin + inference_params.BARCODING_INTERVALS_PER_EPOCH + 1
-        else:
-            begin = in_epoch * inference_params.INTERVALS_PER_EPOCH
-            end = begin + inference_params.EVOLUTION_INTERVALS_PER_EPOCH + 1
-            end = begin + inference_params.EVOLUTION_INTERVALS_PER_EPOCH
-
-        return begin, end
+        return interval_endpoints(in_epoch, barcoding)
 
     def get_counts(self, lineage, in_epoch, barcoding = False):
         """ Picks out observed counts in appropriate epoch  """
@@ -229,3 +221,13 @@ def determine_q_values(data, fitness_estimator, max_barcodes, barcoding = False)
 
     return threshold_values, empirical_null, t_statistic_95_percent_cutoff
 
+def interval_endpoints(in_epoch, barcoding=False):
+    if barcoding:
+        begin = in_epoch*inference_params.INTERVALS_PER_EPOCH + inference_params.EVOLUTION_INTERVALS_PER_EPOCH
+        end = begin + inference_params.BARCODING_INTERVALS_PER_EPOCH + 1
+    else:
+        begin = in_epoch * inference_params.INTERVALS_PER_EPOCH
+        end = begin + inference_params.EVOLUTION_INTERVALS_PER_EPOCH + 1
+        end = begin + inference_params.EVOLUTION_INTERVALS_PER_EPOCH
+
+    return begin, end
