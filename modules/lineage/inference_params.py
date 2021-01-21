@@ -1,9 +1,10 @@
 import numpy as np
 
 # fitness estimation settings
-threshold_lineage_size = 1 # do not estimate fitness for lineages below this size
+threshold_lineage_size = 20 # do not estimate fitness for lineages below this size
 size_range_mean = 10
 drifting_lineage_size_range = [size_range_mean - 2.*np.sqrt(size_range_mean),size_range_mean+2.*np.sqrt(size_range_mean)] # for construction of null model
+drifting_lineage_size_range = [0, 10000]
 FDR = 0.05
 
 max_fitness = {'barcoding':5.,'evolution':0.5}
@@ -17,8 +18,8 @@ fitness_grid = {'barcoding':barcoding_fitness_grid,'evolution':evolution_fitness
 # assign a number of generations per interval
 scale_fitness_per_interval = {'barcoding' : 1., 'evolution':10.}
 
-EVOLUTION_INTERVALS_PER_EPOCH = 5
+EVOLUTION_INTERVALS_PER_EPOCH = 2
 BARCODING_INTERVALS_PER_EPOCH = 0
 
 INTERVALS_PER_EPOCH = BARCODING_INTERVALS_PER_EPOCH + EVOLUTION_INTERVALS_PER_EPOCH
-NUMBER_OF_EPOCHS = 2
+NUMBER_OF_EPOCHS = 5

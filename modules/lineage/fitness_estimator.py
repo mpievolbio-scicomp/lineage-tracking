@@ -126,7 +126,8 @@ class FitnessEstimator:
     def empirical_pvalue(self, lineage, in_epoch, barcoding = False):
         observed, begin, end = self.get_counts(lineage, in_epoch, barcoding)
 
-        if any(observed < inference_params.threshold_lineage_size):
+#         if any(observed < inference_params.threshold_lineage_size):
+        if all(observed < inference_params.threshold_lineage_size):
             # do not attempt to infer fitness of miniscule lineages
             return 2., 0
         else:
@@ -143,6 +144,9 @@ class FitnessEstimator:
 
 
     def update_lineage_fitness(self, lineage, in_epoch, barcoding = False, masked_epochs = []):
+        if lineage.ID == "ACGTTGTCC":
+            pass
+#             breakpoint()
         pval, t = self.empirical_pvalue(lineage, in_epoch, barcoding)
         if pval <= self.qvals[in_epoch]:
             # infer fitness if there's evidence that the lineage is selected or if it has been selected in a previous epoch
@@ -186,7 +190,9 @@ def determine_q_values(data, fitness_estimator, max_barcodes, barcoding = False)
 
                     observed, begin, end = fitness_estimator.get_counts(lineage, target_epoch, barcoding)
 
-                    if all(observed > inference_params.threshold_lineage_size):
+                    # Carsten 2020-12-14: change all to any to allow initially low lineages come into consideration if the grow later.
+                    if any(observed > inference_params.threshold_lineage_size):
+                    # if all(observed > inference_params.threshold_lineage_size):
                         llhs = fitness_estimator.get_branching_process_log_likelihoods(observed, begin, end, barcoding)
                         min_llh = min(llhs)
                         neutral_llh = llhs[inference_params.num_fitnesses]
@@ -221,13 +227,13 @@ def determine_q_values(data, fitness_estimator, max_barcodes, barcoding = False)
 
     return threshold_values, empirical_null, t_statistic_95_percent_cutoff
 
-def interval_endpoints(in_epoch, barcoding=False):
+def interval_endpoints(in_epoch, barcoding=False, overlap=0):
     if barcoding:
         begin = in_epoch*inference_params.INTERVALS_PER_EPOCH + inference_params.EVOLUTION_INTERVALS_PER_EPOCH
         end = begin + inference_params.BARCODING_INTERVALS_PER_EPOCH + 1
     else:
         begin = in_epoch * inference_params.INTERVALS_PER_EPOCH
-        end = begin + inference_params.EVOLUTION_INTERVALS_PER_EPOCH + 1
+#         end = begin + inference_params.EVOLUTION_INTERVALS_PER_EPOCH + 1
         end = begin + inference_params.EVOLUTION_INTERVALS_PER_EPOCH
 
     return begin, end

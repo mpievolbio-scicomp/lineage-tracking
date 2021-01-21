@@ -13,25 +13,22 @@ import itertools
 
 import matplotlib.animation as manimation
 
-## add custom modules to path
-sys.path.insert(0,'../modules/') 
-
 # import custom modules
-import config
-import local_matplotlibrc
-import lineage.file_parser as file_parser
-from lineage.lineage import Lineage
+from ltrack import config
+from ltrack import local_matplotlibrc
+from . import file_parser 
+from .lineage import Lineage
     
-from lineage import *
-import lineage.inference_params as inference_params
+from .lineage import *
+from . import inference_params
 
-from lineage.tree_utils import *
-from lineage.plot_utils_clone import *
+from .tree_utils import *
+from .plot_utils_clone import *
 
 clone_directory = config.clone_data_directory
 
 def read_clone_data(population, read_fitness = True, assign_colors = True):
-
+    
     if population == "D1":
         fitness_norm = 0.12
     else:
@@ -43,6 +40,7 @@ def read_clone_data(population, read_fitness = True, assign_colors = True):
     sys.stderr.write(" reading freq files...\n")
     clone_freq_file = file_parser.natural_sort(glob.glob(clone_directory+population+'-clone_frequencies.tsv'))[0]
     times, clone_data = file_parser.parse_frequency_file(clone_freq_file,prepend_zeros = False)
+    
     clone_dict = clone_data['']
 
     sys.stderr.write(" reading clone list\n")
@@ -87,6 +85,10 @@ def read_clone_data(population, read_fitness = True, assign_colors = True):
         barcoding_fitness_file = config.clone_data_directory+population+'-barcoding_fitnesses.tsv'
 
         for clone_fitness_file in [evolution_fitness_file,barcoding_fitness_file]:
+            # Check if file exists.
+            if not os.path.isfile(clone_fitness_file):
+                continue
+                
             if len(clone_fitness_file) > 0:
                 sys.stderr.write(" reading fitness inferences...\n")
                 # print clone_fitness_file
